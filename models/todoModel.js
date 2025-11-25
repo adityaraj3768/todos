@@ -28,15 +28,15 @@ function run(sql, params = []) {
 }
 
 const Todo = {
-  getAll: () => all('SELECT id, title, completed, created_at FROM todos ORDER BY id DESC'),
+  getAll: (userId) => all('SELECT id, title, completed, created_at FROM todos WHERE user_id = ? ORDER BY id DESC', [userId]),
 
-  getById: (id) => get('SELECT id, title, completed, created_at FROM todos WHERE id = ?', [id]),
+  getById: (id, userId) => get('SELECT id, title, completed, created_at FROM todos WHERE id = ? AND user_id = ?', [id, userId]),
 
-  create: ({ title, completed = 0 }) =>
-    run('INSERT INTO todos (title, completed) VALUES (?, ?)', [title, completed ? 1 : 0])
+  create: ({ title, completed = 0, userId }) =>
+    run('INSERT INTO todos (title, completed, user_id) VALUES (?, ?, ?)', [title, completed ? 1 : 0, userId])
       .then((r) => ({ id: r.lastID, title, completed: completed ? 1 : 0 })),
 
-  update: (id, fields) => {
+  update: (id, fields, userId) => {
     const sets = [];
     const params = [];
     if (fields.title !== undefined) {
@@ -48,12 +48,12 @@ const Todo = {
       params.push(fields.completed ? 1 : 0);
     }
     if (sets.length === 0) return Promise.resolve({ changes: 0 });
-    params.push(id);
-    const sql = `UPDATE todos SET ${sets.join(', ')} WHERE id = ?`;
+    params.push(id, userId);
+    const sql = `UPDATE todos SET ${sets.join(', ')} WHERE id = ? AND user_id = ?`;
     return run(sql, params);
   },
 
-  delete: (id) => run('DELETE FROM todos WHERE id = ?', [id]),
+  delete: (id, userId) => run('DELETE FROM todos WHERE id = ? AND user_id = ?', [id, userId]),
 };
 
 module.exports = Todo;
